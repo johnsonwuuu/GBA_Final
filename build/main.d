@@ -58,7 +58,8 @@ main.o: C:/Users/shaxi/Desktop/GBA_Final/Mechazilla/src/main.cpp \
  C:/Users/shaxi/Desktop/GBA_Final/Mechazilla/build/bn_sprite_items_rocket.h \
  C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_optional.h \
  C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_random.h \
- C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_limits.h
+ C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_limits.h \
+ C:/Users/shaxi/Desktop/GBA_Final/Mechazilla/build/bn_regular_bg_items_goodintro.h
 C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_core.h:
 C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_span.h:
 C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_array.h:
@@ -119,3 +120,4 @@ C:/Users/shaxi/Desktop/GBA_Final/Mechazilla/build/bn_sprite_items_rocket.h:
 C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_optional.h:
 C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_random.h:
 C:/Users/shaxi/Desktop/GBA_Final/butano/include/bn_limits.h:
+C:/Users/shaxi/Desktop/GBA_Final/Mechazilla/build/bn_regular_bg_items_goodintro.h:

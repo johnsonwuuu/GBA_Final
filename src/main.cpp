@@ -12,6 +12,7 @@
 #include "bn_sprite_items_rocket.h"
 #include "bn_optional.h"
 #include "bn_random.h"
+#include "bn_regular_bg_items_goodintro.h"
 
 const int FRAME_LIMIT = 60;
 
@@ -114,6 +115,24 @@ int main()
 {
     bn::core::init();
 
+    // Initialize intro background with goodintro
+    bn::optional<bn::regular_bg_ptr> intro_bg = bn::regular_bg_items::goodintro.create_bg(0, 0);
+
+    // Wait for A button press to start game
+    while(!bn::keypad::a_pressed())
+    {
+        bn::core::update();
+    }
+
+    // Clear intro screen
+    intro_bg.reset();
+
+    // Initialize stage1 background after intro
+    GameStage current_stage = GameStage::STAGE1;
+    bn::optional<bn::regular_bg_ptr> bg1 = bn::regular_bg_items::stage1.create_bg(0, 0);
+    bn::optional<bn::regular_bg_ptr> bg2;
+    bn::optional<bn::regular_bg_ptr> bg3;
+
     // Screen dimensions (GBA screen is 240x160)
     const bn::fixed screen_width = 240;
     const bn::fixed screen_height = 160;
@@ -126,22 +145,13 @@ int main()
     // Initialize random number generator
     bn::random random;
 
-    // Initialize backgrounds as optional
-    bn::optional<bn::regular_bg_ptr> bg1;
-    bn::optional<bn::regular_bg_ptr> bg2;
-    bn::optional<bn::regular_bg_ptr> bg3;
-    
-    // Start with stage1
-    GameStage current_stage = GameStage::STAGE1;
-    bg1 = bn::regular_bg_items::stage1.create_bg(0, 0);
-
     // Booster initialization
     Booster booster(start_x, start_y, 100, 50, 20);
     bn::sprite_ptr booster_sprite = bn::sprite_items::rocket.create_sprite(start_x, start_y);
     booster_sprite.set_rotation_angle(0);
 
-    // Create Mechazilla sprite with initial position
-    bn::fixed mechazilla_x = (random.get() % 160) - 80; // Random position between -80 and 80
+    // Create Mechazilla sprite with initial random position
+    bn::fixed mechazilla_x = (random.get() % 160) - 80;
     bn::sprite_ptr mechazilla_sprite = bn::sprite_items::mechazilla.create_sprite(mechazilla_x, 48);
 
     // Add wind direction toggle with faster changes
@@ -230,32 +240,27 @@ int main()
                     bg1.reset();
                     bg2 = bn::regular_bg_items::stage2.create_bg(0, 0);
                     current_stage = GameStage::STAGE2;
-                    // New random position for Mechazilla
                     mechazilla_x = (random.get() % 160) - 80;
                     mechazilla_sprite.set_x(mechazilla_x);
+                    booster.reset_position(start_x, start_y);
                     break;
                     
                 case GameStage::STAGE2:
                     bg2.reset();
                     bg3 = bn::regular_bg_items::stage3.create_bg(0, 0);
                     current_stage = GameStage::STAGE3;
-                    // New random position for Mechazilla
                     mechazilla_x = (random.get() % 160) - 80;
                     mechazilla_sprite.set_x(mechazilla_x);
+                    booster.reset_position(start_x, start_y);
                     break;
                     
-                default:
-                    bg3.reset();
-                    bg1 = bn::regular_bg_items::stage1.create_bg(0, 0);
-                    current_stage = GameStage::STAGE1;
-                    // New random position for Mechazilla
-                    mechazilla_x = (random.get() % 160) - 80;
-                    mechazilla_sprite.set_x(mechazilla_x);
-                    break;
+                case GameStage::STAGE3:
+                    // Freeze the final scene
+                    while(true)
+                    {
+                        bn::core::update();  // Keep updating the screen
+                    }
             }
-            
-            // Reset rocket position
-            booster.reset_position(start_x, start_y);
         }
         else if(booster.get_y() > 80)
         {

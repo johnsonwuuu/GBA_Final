@@ -13,6 +13,7 @@
 #include "bn_optional.h"
 #include "bn_random.h"
 #include "bn_regular_bg_items_goodintro.h"
+#include "bn_regular_bg_items_ending.h"
 
 const int FRAME_LIMIT = 60;
 
@@ -28,53 +29,110 @@ private:
     bn::fixed x, y;          
     bn::fixed vx, vy;        
     bn::fixed ax, ay;        
-    bn::fixed theta_r;       
-    bn::fixed omega_r;       
-    bn::fixed alpha_r;       
-    bn::fixed theta_v;       
+    bn::fixed theta_r;       // Rocket rotation angle
     bn::fixed mass;          
-    bn::fixed inertia;       
     bn::fixed height;        
-    static constexpr bn::fixed GRAVITY = 0.5;   
-    static constexpr bn::fixed MOVE_SPEED = 3;
-    static constexpr bn::fixed WIND_FORCE = 0.08;  // Increased wind force
-    static constexpr bn::fixed TURBULENCE = 0.1;  // Increased turbulence
+    static constexpr bn::fixed GRAVITY = 0.03;    // Reduced gravity
+    static constexpr bn::fixed WIND_FORCE = 0.04;  
+    static constexpr bn::fixed TURBULENCE = 0.02;   
+    static constexpr bn::fixed ROTATION_SPEED = 2.0;  
+    static constexpr bn::fixed AIR_RESISTANCE = 0.05; // Increased air resistance
+    static constexpr bn::fixed THRUST = 0.05;    
     bn::random random;
 
+    // Helper function to normalize angle (marked as const)
+    int normalize_angle(int angle) const
+    {
+        while(angle < 0) 
+        {
+            angle += 360;
+        }
+        while(angle >= 360) 
+        {
+            angle -= 360;
+        }
+        return angle;
+    }
+
 public:
-    Booster(bn::fixed initial_x, bn::fixed initial_y, bn::fixed booster_mass, bn::fixed booster_inertia, bn::fixed booster_height)
-        : x(initial_x), y(initial_y), vx(0), vy(0), ax(0), ay(GRAVITY), theta_r(0), omega_r(0), alpha_r(0), theta_v(0),
-          mass(booster_mass), inertia(booster_inertia), height(booster_height)
+    Booster(bn::fixed initial_x, bn::fixed initial_y, bn::fixed booster_mass, bn::fixed booster_height)
+        : x(initial_x), y(initial_y), vx(0), vy(0), ax(0), ay(GRAVITY), theta_r(0),
+          mass(booster_mass), height(booster_height)
     {
     }
 
     void move_left()
     {
-        vx = -MOVE_SPEED;
+        // Tilt left
+        if(theta_r > -45)
+        {
+            theta_r -= ROTATION_SPEED;
+        }
     }
 
     void move_right()
     {
-        vx = MOVE_SPEED;
+        // Tilt right
+        if(theta_r < 45)
+        {
+            theta_r += ROTATION_SPEED;
+        }
     }
 
-    void stop_horizontal()
-    {
-        vx = 0;
-    }
-
-    void update(bn::fixed dt)
+    void update()
     {
         // Apply gravity
-        vy += ay * dt;
+        vy += GRAVITY;
+
+        // Calculate horizontal movement based on tilt
+        if(theta_r < 0)  // Tilted left
+        {
+            vx -= THRUST;
+        }
+        else if(theta_r > 0)  // Tilted right
+        {
+            vx += THRUST;
+        }
+
+        // Apply air resistance
+        vx *= (1 - AIR_RESISTANCE);
+        vy *= (1 - AIR_RESISTANCE);
 
         // Update position
-        x += vx * dt;
-        y += vy * dt;
+        x += vx;
+        y += vy;
+    }
 
-        // Update rotation
-        omega_r += alpha_r * dt;
-        theta_r += omega_r * dt;
+    void apply_wind(bool direction, GameStage current_stage)
+    {
+        bn::fixed wind_multiplier;
+        
+        switch(current_stage)
+        {
+            case GameStage::STAGE1:
+                wind_multiplier = 0;  // No wind in stage 1
+                break;
+            case GameStage::STAGE2:
+                wind_multiplier = 2;  // Normal wind in stage 2
+                break;
+            case GameStage::STAGE3:
+                wind_multiplier = 1.5;  // Reduced wind in stage 3
+                break;
+        }
+
+        if(direction)
+        {
+            vx += WIND_FORCE * wind_multiplier;
+        }
+        else
+        {
+            vx -= WIND_FORCE * wind_multiplier;
+        }
+    }
+
+    void apply_turbulence()
+    {
+        vx += (random.get() % 200 - 100) * TURBULENCE / 100;
     }
 
     void reset_position(bn::fixed new_x, bn::fixed new_y)
@@ -84,31 +142,11 @@ public:
         vx = 0;
         vy = 0;
         theta_r = 0;
-        omega_r = 0;
-        alpha_r = 0;
     }
 
     bn::fixed get_x() const { return x; }
     bn::fixed get_y() const { return y; }
-    bn::fixed get_theta_r() const { return theta_r; }
-
-    void apply_wind(bool direction)
-    {
-        if(direction)
-        {
-            vx += WIND_FORCE * 2;  // Stronger push right
-        }
-        else
-        {
-            vx -= WIND_FORCE * 2;  // Stronger push left
-        }
-    }
-
-    void apply_turbulence()
-    {
-        // Only affect horizontal movement with stronger effect
-        vx += (random.get() % 200 - 100) * TURBULENCE / 100;  // Increased range and strength
-    }
+    int get_theta_r() const { return normalize_angle(theta_r.integer()); }  // Return normalized angle
 };
 
 int main()
@@ -146,7 +184,7 @@ int main()
     bn::random random;
 
     // Booster initialization
-    Booster booster(start_x, start_y, 100, 50, 20);
+    Booster booster(start_x, start_y, 100, 20);
     bn::sprite_ptr booster_sprite = bn::sprite_items::rocket.create_sprite(start_x, start_y);
     booster_sprite.set_rotation_angle(0);
 
@@ -174,10 +212,6 @@ int main()
                 {
                     booster.move_right();
                 }
-                else
-                {
-                    booster.stop_horizontal();
-                }
                 break;
 
             case GameStage::STAGE2:
@@ -190,10 +224,6 @@ int main()
                 {
                     booster.move_right();
                 }
-                else
-                {
-                    booster.stop_horizontal();
-                }
                 
                 // More frequent wind changes
                 wind_counter++;
@@ -202,7 +232,7 @@ int main()
                     wind_counter = 0;
                     wind_right = !wind_right;
                 }
-                booster.apply_wind(wind_right);
+                booster.apply_wind(wind_right, current_stage);
                 break;
 
             case GameStage::STAGE3:
@@ -215,18 +245,14 @@ int main()
                 {
                     booster.move_right();
                 }
-                else
-                {
-                    booster.stop_horizontal();
-                }
                 
-                booster.apply_wind(wind_right);
+                booster.apply_wind(wind_right, current_stage);
                 booster.apply_turbulence();  // Now only affects horizontal movement
                 break;
         }
 
         // Update rocket physics
-        booster.update(0.1);
+        booster.update();
         booster_sprite.set_position(booster.get_x(), booster.get_y());
         booster_sprite.set_rotation_angle(booster.get_theta_r());
 
@@ -255,10 +281,18 @@ int main()
                     break;
                     
                 case GameStage::STAGE3:
-                    // Freeze the final scene
+                    // Clear everything
+                    bg3.reset();
+                    mechazilla_sprite.set_visible(false);
+                    booster_sprite.set_visible(false);
+                    
+                    // Create ending background
+                    bn::regular_bg_ptr ending_bg = bn::regular_bg_items::ending.create_bg(0, 0);
+                    
+                    // Freeze on ending screen
                     while(true)
                     {
-                        bn::core::update();  // Keep updating the screen
+                        bn::core::update();
                     }
             }
         }

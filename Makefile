@@ -28,16 +28,18 @@
 #
 # All directories are specified relative to the project directory where the makefile is found.
 #---------------------------------------------------------------------------------------------------------------------
-TARGET      	:=  $(notdir $(CURDIR))
+CURRENT_DIR := .
+
+TARGET      	:=  $(notdir $(CURRENT_DIR))
 BUILD       	:=  build
 LIBBUTANO   	:=  ../butano
 PYTHON      	:=  python
-SOURCES     	:=  src /src
-INCLUDES    	:=  include /include $(LIBBUTANOABS)/common/include ../butano/common/include
+SOURCES     	:=  src
+INCLUDES    	:=  include
 DATA        	:=
-GRAPHICS    	:=  graphics /graphics
-AUDIO       	:=  audio /audio
-DMGAUDIO    	:=  dmg_audio /dmg_audio
+GRAPHICS    	:=  graphics
+AUDIO       	:=  audio
+DMGAUDIO    	:=  dmg_audio
 ROMTITLE    	:=  BUTANO MECHAZILLA
 ROMCODE     	:=  SBTP
 USERFLAGS   	:=  
@@ -51,19 +53,16 @@ STACKTRACE		:=
 USERBUILD   	:=  
 EXTTOOL     	:=  
 
-#---------------------------------------------------------------------------------------------------------------------
-# Export absolute butano path:
-#---------------------------------------------------------------------------------------------------------------------
+# Add these explicit path definitions
 ifndef LIBBUTANOABS
-	export LIBBUTANOABS	:=	$(abspath ../butano)
+	export LIBBUTANOABS	:=	$(abspath $(LIBBUTANO))
 endif
 
-#---------------------------------------------------------------------------------------------------------------------
-# Export CXXFLAGS:
-#---------------------------------------------------------------------------------------------------------------------
-export CXXFLAGS    += -I$(LIBBUTANOABS)/common/include
+# Force forward slashes for paths
+LIBBUTANOABS := $(subst \,/,$(LIBBUTANOABS))
+LIBBUTANO := $(subst \,/,$(LIBBUTANO))
 
-#---------------------------------------------------------------------------------------------------------------------
-# Include main makefile:
-#---------------------------------------------------------------------------------------------------------------------
+export CXXFLAGS += -I$(LIBBUTANOABS)/common/include
+
+# Include butano makefile
 include $(LIBBUTANOABS)/butano.mak
